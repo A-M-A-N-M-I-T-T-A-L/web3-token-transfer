@@ -1,8 +1,10 @@
-import React from "react";
+import React, { useContext } from "react";
 import { AiFillPlayCircle } from "react-icons/ai";
 import { SiEthereum } from "react-icons/si";
 import { BsInfoCircle } from "react-icons/bs";
 import Loader from "./Loader";
+
+import { TransactionContext } from "../context/TransactionContext";
 
 const Input = ({ placeholder, name, type, value, handleChange }) => (
   <input
@@ -16,7 +18,8 @@ const Input = ({ placeholder, name, type, value, handleChange }) => (
 );
 
 const Welcome = () => {
-  const connectWallet = () => {};
+const {connectWallet} = useContext(TransactionContext);
+
   const handleSubmit = () => {};
 
   const commonStyles =
