@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { ethers } from "ethers";
 import React from "react";
 
@@ -17,22 +17,42 @@ const getEthereumContract = () => {
     signer
   );
 
-  console.table(provider, signer, transactionContract);
+  return transactionContract;
 };
 
 export const TransactionProvider = ({ children }) => {
-  const [connectedAccount, setConnectedAccount] = useState();
+  const [currentAccount, setCurrentAccount] = useState();
+  const [formData, setFormData] = useState({
+    addressTo: "",
+    amount: "",
+    keyword: "",
+    message: "",
+  });
+  const [isLoading, setIsLoading] = useState(false);
+  const [transactionCount, setTransactionCount] = useState(
+    localStorage.getItem("transactionCount")
+  );
+
+  const handleChange = (e, name) => {
+    setFormData((prevState) => ({ ...prevState, [name]: e.target.value }));
+  };
 
   const checkIfWalletIsConnected = async () => {
-    if (!ethereum) return alert("Please install a wallet");
-    const accounts = await ethereum.request({ method: "eth_accounts" });
+    try {
+      if (!ethereum) return alert("Please install a wallet");
+      const accounts = await ethereum.request({ method: "eth_accounts" });
 
-    if(accounts.length){
+      if (accounts.length) {
         setCurrentAccount(accounts[0]);
-        
-    }
 
-    console.log(accounts);
+        //getAllTransactions();
+      } else {
+        console.log("No accounts found");
+      }
+    } catch (error) {
+      console.log(error);
+      throw new Error("No Ethereum Object.");
+    }
   };
 
   const connectWallet = async () => {
@@ -42,7 +62,52 @@ export const TransactionProvider = ({ children }) => {
         method: "eth_requestAccounts",
       });
       setCurrentAccount(accounts[0]);
+    } catch (error) {
+      console.log(error);
+      throw new Error("No Ethereum Object.");
+    }
+  };
 
+  const sendTransaction = async () => {
+    try {
+      if (!ethereum) return alert("Please install a wallet");
+
+      const { addressTo, amount, keyword, message } = formData;
+
+      const transactionContract = getEthereumContract();
+
+      const parsedAmount = ethers.utils.parseEther(amount);
+
+      await ethereum.request({
+        method: "eth_sendTransaction",
+        params: [
+          {
+            from: currentAccount,
+            to: addressTo,
+            gas: "0x5208",
+            value: parsedAmount._hex,
+          },
+        ],
+      });
+
+      const transactionHash = await transactionContract.addToBlockchain(
+        addressTo,
+        parsedAmount,
+        message,
+        keyword
+      );
+
+      setIsLoading(true);
+      console.log(`Loading - ${transactionHash.hash}`);
+
+      await transactionHash.wait();
+
+      setIsLoading(false);
+      console.log(`Success - ${transactionHash.hash}`);
+
+      const transactionCount = await transactionContract.getTransactionCount();
+
+      setTransactionCount(transactionCount.toNumber());
     } catch (error) {
       console.log(error);
       throw new Error("No Ethereum Object.");
@@ -51,10 +116,19 @@ export const TransactionProvider = ({ children }) => {
 
   useEffect(() => {
     checkIfWalletIsConnected();
-  });
+  }, []);
 
   return (
-    <TransactionContext.Provider value={{ connectWallet }}>
+    <TransactionContext.Provider
+      value={{
+        connectWallet,
+        currentAccount,
+        formData,
+        setFormData,
+        handleChange,
+        sendTransaction,
+      }}
+    >
       {children}
     </TransactionContext.Provider>
   );
