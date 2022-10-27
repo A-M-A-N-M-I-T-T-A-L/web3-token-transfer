@@ -25,6 +25,7 @@ const Welcome = () => {
     formData,
     sendTransaction,
     handleChange,
+    isLoading
   } = useContext(TransactionContext);
 
   const handleSubmit = (e) => {
@@ -54,7 +55,7 @@ const Welcome = () => {
           {!currentAccount && (
             <button
               className="flex flex-row justify-center items-center my-5 bg-[#2952e3] p-3 rounded-full cursor-pointer hover:bg-[#2546bd] text-white font-semibold text-base"
-              onClick={connectWallet}
+              onClick={()=>connectWallet()}
             >
               Connect Wallet
             </button>
@@ -119,7 +120,7 @@ const Welcome = () => {
             />
             <div className="h-[1px] w-full bg-gray-400 my-2" />
 
-            {false ? (
+            {isLoading ? (
               <Loader />
             ) : (
               <button
